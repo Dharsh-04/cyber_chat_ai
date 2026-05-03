@@ -1,222 +1,276 @@
-SafeChat — AI-Powered Cyberbullying Detection System
-A real-time messaging platform with an integrated AI agent pipeline that monitors, detects, and moderates cyberbullying behaviour across text, images, and emoji — built as a research and demonstration project.
+# **SafeChat — AI-Powered Cyberbullying Detection System**
 
-Overview
-SafeChat is a multimodal cyberbullying detection system that combines a fine-tuned deep learning model with an agentic AI orchestration layer. The system intercepts every message in real time, scores it across multiple modalities, and autonomously decides whether to warn, escalate, or restrict a user — all without requiring human intervention for routine moderation decisions.
-The project addresses a core limitation of existing moderation tools: single-modality text classifiers that miss sarcasm, image-based harassment, and escalation patterns. SafeChat integrates vision, language, and behavioural context into a unified detection pipeline.
+## **Overview**
 
-Architecture
+SafeChat is a real-time messaging platform integrated with an AI-driven moderation system that detects and manages cyberbullying across text, images, and emojis. It is designed as a research and demonstration project to address the limitations of traditional moderation systems.
+
+Unlike conventional tools that rely solely on text-based classification, SafeChat combines multimodal analysis and behavioral tracking to detect sarcasm, image-based harassment, and repeated abusive patterns. The system operates autonomously, reducing the need for manual moderation in routine cases.
+
+---
+
+## **System Architecture**
+
+```
 Flutter Mobile App
-        |
-        v
-Supabase (PostgreSQL + Realtime + Storage)
-        |
-        v
+        │
+        ▼
+Supabase (PostgreSQL, Realtime, Storage)
+        │
+        ▼
 FastAPI Inference Server (HuggingFace Spaces)
-        |
-        v
+        │
+        ▼
 LangGraph Agent Pipeline
-   |            |            |            |
-Detector     Analyser      Action      Report
-Agent        Agent         Agent       Agent
-(DistilBERT  (Groq LLM)   (Decision   (Admin
- + CLIP +                  Logic)      Summary)
- Sarcasm)
-        |
-        v
+   ├── Detector Agent (DistilBERT, CLIP, OCR)
+   ├── Analyser Agent (Groq LLM - LLaMA 3)
+   ├── Action Agent (Decision Logic)
+   └── Report Agent (Admin Summary)
+        │
+        ▼
 Admin Dashboard (Flutter)
+```
 
-Key Features
-Multimodal Detection
+---
 
-OCR-based text extraction from meme images using Tesseract
-CLIP zero-shot visual scoring for images with insufficient text
-Fine-tuned DistilBERT classifier for caption and message text
-Sarcasm and irony detection using a RoBERTa-based model
-Weighted fusion of all modality scores into a single confidence value
+## **Key Features**
 
-Agentic AI Orchestration (LangGraph)
+### **1. Multimodal Detection**
 
-Detector Agent: scores message using all modalities
-Analyser Agent: uses Groq LLM (LLaMA 3) to reason about behaviour patterns
-Action Agent: autonomously decides moderation action based on context
-Report Agent: generates human-readable admin summaries
+* OCR-based text extraction from images using Tesseract
+* CLIP-based visual understanding for image-only content
+* Fine-tuned DistilBERT model for text classification
+* Sarcasm detection using a RoBERTa-based model
+* Weighted fusion of all modalities into a unified confidence score
 
-Automated Escalation Pipeline
+---
 
-Warning 1 to 2: silent logging
-Warning 3: AI surveillance alert shown to user in-app (one-time, permanent)
-Warning 4 to 5: admin notified with option to send email warning
-Warning 6 and above: admin notified with option to permanently block user
-Block action deletes user data and prevents future login
+### **2. Agentic AI Orchestration (LangGraph)**
 
-Admin Dashboard
+* **Detector Agent**: Scores input across text, image, and emoji modalities
+* **Analyser Agent**: Uses LLaMA 3 via Groq API to interpret behavior patterns
+* **Action Agent**: Determines moderation action based on severity and history
+* **Report Agent**: Generates structured summaries for admin review
 
-Tab 1 — Users: full user list with risk levels, tap for Groq-powered behaviour analysis
-Tab 2 — Warnings: all flagged messages with scores and metadata
-Tab 3 — Risk Distribution: bar chart showing High / Medium / Low / Clean user breakdown
-Tab 4 — Alerts: actionable notifications for users requiring manual intervention
+---
 
-Real-Time Messaging
+### **3. Automated Escalation Pipeline**
 
-WebSocket-based message delivery via Supabase Realtime
-AI inference runs in the background — message delivery is not blocked
-Image sharing with OCR and CLIP analysis
-Timestamps corrected to local timezone (IST)
+| Warning Count | Action                                                 |
+| ------------- | ------------------------------------------------------ |
+| 1–2           | Silent logging (admin-visible only)                    |
+| 3             | AI surveillance warning shown to user (one-time alert) |
+| 4–5           | Admin notified with option to send warning email       |
+| 6+            | Admin notified with option to block user permanently   |
 
+Blocking prevents login and removes access to the platform.
 
-Technology Stack
-LayerTechnologyMobile FrontendFlutter (Dart)Backend / DatabaseSupabase (PostgreSQL, Realtime, Storage)AI Inference ServerFastAPI, Python 3.10Model DeploymentHuggingFace Spaces (Docker)Cyberbullying ClassifierDistilBERT (fine-tuned on cyberbullying dataset)Visual UnderstandingCLIP (openai/clip-vit-base-patch32)Sarcasm Detectioncardiffnlp/twitter-roberta-base-ironyOCRTesseract via pytesseractAgent OrchestrationLangGraphLLM BrainGroq API (LLaMA 3.3 70B)Email AutomationSMTP via Gmail App Password (mailer package)HTTP ClientDart http packageChartsfl_chart
+---
 
-Model Details
-DistilBERT Cyberbullying Classifier
+### **4. Admin Dashboard**
 
-Base model: distilbert-base-uncased
-Fine-tuned on a labelled cyberbullying dataset
-Output: binary classification (cyberbullying / not cyberbullying) with softmax confidence score
-Threshold: 0.50 weighted fusion score
+* **Users Tab**: Displays all users with risk levels and behavior insights
+* **Warnings Tab**: Shows flagged messages with scores and metadata
+* **Risk Distribution Tab**: Visual breakdown of user risk categories
+* **Alerts Tab**: Actionable notifications for escalation decisions
 
-Weighted Fusion
-When OCR text is sufficient (4 or more words):
+---
 
-OCR score: 40%
-Caption score: 40%
-Emoji meaning score: 20%
+### **5. Real-Time Messaging**
 
-When OCR text is insufficient (CLIP fallback):
+* WebSocket-based communication using Supabase Realtime
+* Non-blocking AI inference (messages are delivered instantly)
+* Image sharing with OCR and visual analysis
+* Timezone-aware timestamps (IST support)
 
-CLIP visual score: 40%
-Caption score: 45%
-Emoji meaning score: 15%
+---
 
-Sarcasm Overlay
+## **Technology Stack**
 
-If sarcasm confidence exceeds 0.60 and weighted score is below 0.40, the message is reclassified as Harmless Sarcasm
-If sarcasm is detected and weighted score exceeds 0.40, it is reclassified as Sarcastic Bullying
+| Layer             | Technology                               |
+| ----------------- | ---------------------------------------- |
+| Frontend          | Flutter (Dart)                           |
+| Backend           | Supabase (PostgreSQL, Realtime, Storage) |
+| AI Server         | FastAPI (Python 3.10)                    |
+| Deployment        | HuggingFace Spaces (Docker)              |
+| Text Model        | DistilBERT (fine-tuned)                  |
+| Vision Model      | CLIP (ViT-B/32)                          |
+| Sarcasm Detection | RoBERTa (Twitter Irony Model)            |
+| OCR               | Tesseract                                |
+| AI Orchestration  | LangGraph                                |
+| LLM Reasoning     | Groq API (LLaMA 3.3 70B)                 |
+| Email Service     | SMTP (Gmail App Password)                |
+| Charts            | fl_chart                                 |
 
+---
 
-Project Structure
+## **Model Design**
+
+### **DistilBERT Classifier**
+
+* Base Model: distilbert-base-uncased
+* Task: Binary classification (Cyberbullying / Not Cyberbullying)
+* Output: Softmax probability score
+* Threshold: 0.50
+
+---
+
+### **Weighted Fusion Strategy**
+
+**When OCR text is sufficient (≥ 4 words):**
+
+* OCR Text Score: 40%
+* Caption Score: 40%
+* Emoji Score: 20%
+
+**When OCR text is insufficient:**
+
+* CLIP Visual Score: 40%
+* Caption Score: 45%
+* Emoji Score: 15%
+
+---
+
+### **Sarcasm Handling**
+
+* If sarcasm score > 0.60 and total score < 0.40 → Classified as *Harmless Sarcasm*
+* If sarcasm score > 0.60 and total score ≥ 0.40 → Classified as *Sarcastic Bullying*
+
+---
+
+## **Project Structure**
+
+```
 cyber_chat_ai/
 ├── lib/
-│   ├── main.dart                        # App entry, constants, Supabase init
+│   ├── main.dart
 │   ├── models/
 │   │   ├── user_model.dart
 │   │   └── message_model.dart
 │   ├── services/
-│   │   ├── supabase_service.dart        # All DB operations
-│   │   ├── ai_service.dart              # API calls, Groq analysis
-│   │   └── email_service.dart           # SMTP email via Gmail
+│   │   ├── supabase_service.dart
+│   │   ├── ai_service.dart
+│   │   └── email_service.dart
 │   └── screens/
 │       ├── auth/
-│       │   └── login_screen.dart        # Login and registration with email
+│       │   └── login_screen.dart
 │       ├── chat/
-│       │   ├── chat_screen.dart         # Real-time chat with background AI check
+│       │   ├── chat_screen.dart
 │       │   ├── users_list_screen.dart
 │       │   └── widgets/
 │       │       ├── message_bubble.dart
-│       │       └── message_input.dart   # Text + image input with permissions
+│       │       └── message_input.dart
 │       └── admin/
-│           └── admin_dashboard.dart     # 4-tab admin panel
+│           └── admin_dashboard.dart
 ├── android/
-│   └── app/src/main/
-│       ├── AndroidManifest.xml
-│       └── res/xml/network_security_config.xml
 └── pubspec.yaml
+```
 
-Supabase Schema
-sql-- Users table
-create table users (
-  id            uuid default gen_random_uuid() primary key,
-  username      text unique not null,
-  password      text not null,
-  email         text default '',
-  alert_shown   boolean default false,
-  is_blocked    boolean default false,
-  warning_count int default 0,
-  created_at    timestamp default now()
-);
+---
 
--- Messages table
-create table messages (
-  id            uuid default gen_random_uuid() primary key,
-  sender_id     uuid references users(id),
-  receiver_id   uuid references users(id),
-  text          text,
-  image_url     text,
-  flagged       boolean default false,
-  bully_score   float default 0,
-  sarcasm_type  text default 'None',
-  prediction    text default 'Not Cyberbullying',
-  created_at    timestamp default now()
-);
+## **Database Schema**
 
--- Flags table
-create table flags (
-  id            uuid default gen_random_uuid() primary key,
-  user_id       text,
-  username      text,
-  message_id    text,
-  message_text  text,
-  bully_score   float default 0,
-  sarcasm_type  text default 'None',
-  prediction    text default 'Cyberbullying',
-  warning_count int default 1,
-  severity      text default 'medium',
-  action        text default 'warn',
-  admin_report  text default '',
-  mail_sent     boolean default false,
-  notified      boolean default false,
-  created_at    timestamp default now()
-);
+### **Users Table**
 
-Setup and Configuration
-1. Clone the repository
-bashgit clone https://github.com/Dharsh-04/cyber_chat_ai.git
+* id (UUID, primary key)
+* username (unique)
+* password
+* email
+* alert_shown (boolean)
+* is_blocked (boolean)
+* warning_count (integer)
+* created_at
+
+---
+
+### **Messages Table**
+
+* id
+* sender_id
+* receiver_id
+* text
+* image_url
+* flagged
+* bully_score
+* sarcasm_type
+* prediction
+* created_at
+
+---
+
+### **Flags Table**
+
+* id
+* user_id
+* username
+* message_id
+* message_text
+* bully_score
+* sarcasm_type
+* prediction
+* warning_count
+* severity
+* action
+* admin_report
+* mail_sent
+* notified
+* created_at
+
+---
+
+## **Setup Instructions**
+
+1. Clone the repository:
+
+```
+git clone https://github.com/Dharsh-04/cyber_chat_ai.git
 cd cyber_chat_ai
-2. Configure credentials in lib/main.dart
-dartconst String supabaseUrl     = 'YOUR_SUPABASE_URL';
-const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
-const String ngrokApiUrl     = 'YOUR_HUGGINGFACE_OR_NGROK_URL';
-const String geminiApiKey    = 'YOUR_GEMINI_API_KEY';
-3. Configure Groq key in lib/services/ai_service.dart
-dartconst groqKey = 'YOUR_GROQ_API_KEY';
-4. Configure Gmail credentials in lib/services/email_service.dart
-dartstatic const _fromEmail   = 'your_gmail@gmail.com';
-static const _appPassword = 'your_16_digit_app_password';
-5. Install dependencies and run
-bashflutter pub get
+```
+
+2. Configure credentials in `main.dart`:
+
+```
+supabaseUrl
+supabaseAnonKey
+ngrokApiUrl
+geminiApiKey
+```
+
+3. Configure Groq API key in `ai_service.dart`
+
+4. Configure email credentials in `email_service.dart`
+
+5. Run the project:
+
+```
+flutter pub get
 flutter run
+```
 
-AI Inference Server Deployment
-The FastAPI server is deployed on HuggingFace Spaces using Docker.
-Required files in Space root:
-app.py               # FastAPI routes + LangGraph pipeline
-requirements.txt     # Python dependencies
-Dockerfile           # Container configuration
-model/               # Fine-tuned DistilBERT model files
-  config.json
-  model.safetensors
-  tokenizer.json
-  tokenizer_config.json
-API Endpoints
-GET  /health                  Health check
-POST /predict/text            Text message scoring
-POST /predict/multimodal      Image + caption + emoji scoring
+---
 
-Admin Credentials
-The admin account is hardcoded and does not require registration.
-Username : admin
-Password : admin@safechat123
+## **AI Inference Server**
 
-Escalation Logic Summary
-Warning CountAction1 to 2Silent flag — admin can see in dashboard3AI surveillance alert shown to user in-app (one time only)4 to 5Admin notification — option to send warning email6 and aboveAdmin notification — option to block and delete user
+### **Endpoints**
 
-Limitations and Future Work
+* `GET /health` — Health check
+* `POST /predict/text` — Text classification
+* `POST /predict/multimodal` — Image + caption analysis
 
-The DistilBERT model was trained on English text only — multilingual support is not yet available
-SMTP email delivery requires a Gmail account with App Password enabled
-The HuggingFace free tier may throttle inference under high load
-Passwords are stored as plain text — production deployment should use bcrypt hashing
-The system currently supports one-to-one messaging only — group chat is not implemented
-LangGraph agent reasoning latency depends on Groq API response time
+---
+
+## **Admin Credentials**
+
+* Username: admin
+* Password: admin@safechat123
+
+---
+
+## **Limitations and Future Improvements**
+
+* Current model supports English only
+* Passwords are stored in plain text (should use hashing in production)
+* HuggingFace free tier may limit performance under load
+* SMTP requires Gmail App Password setup
+* No group chat support currently
+* Latency depends on external LLM (Groq API) response time
 
